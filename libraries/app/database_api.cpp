@@ -3,6 +3,7 @@
 #include <steemit/app/database_api.hpp>
 
 #include <steemit/protocol/get_config.hpp>
+#include <steemit/protocol/transaction_util.hpp>
 
 #include <steemit/chain/util/reward.hpp>
 
@@ -983,28 +984,8 @@ verify_signatures_return database_api_impl::verify_signatures( const verify_sign
    // verify authority throws on failure, catch and return false
    try
    {
-      steemit::protocol::verify_authority(
-         [&args]( flat_set< account_name_type >& required_active,
-                  flat_set< account_name_type >& required_owner,
-                  flat_set< account_name_type >& required_posting,
-                  vector< authority >& )
-         {
-            switch( args.auth_level )
-            {
-               case authority::owner:
-                  std::copy( args.accounts.begin(), args.accounts.end(), required_owner.end() );
-                  break;
-               case authority::active:
-                  std::copy( args.accounts.begin(), args.accounts.end(), required_active.end() );
-                  break;
-               case authority::posting:
-                  std::copy( args.accounts.begin(), args.accounts.end(), required_posting.end() );
-                  break;
-               case authority::key:
-               default:
-                  FC_ASSERT( false, "verify_signatures only supports owner, active, and posting auths" );
-            }
-         },
+      steemit::protocol::verify_authority< verify_signatures_args >(
+         { args },
          sig_keys,
          [this]( const string& name ) { return authority( _db.get< account_authority_object, by_account >( name ).owner ); },
          [this]( const string& name ) { return authority( _db.get< account_authority_object, by_account >( name ).active ); },
